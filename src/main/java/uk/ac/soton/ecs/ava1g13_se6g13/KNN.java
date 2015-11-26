@@ -1,5 +1,10 @@
 package uk.ac.soton.ecs.ava1g13_se6g13;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,6 +66,16 @@ public class KNN
 		for(int i = 0; i < testing.size(); i++){
 			output.put(testing.getFileObject(i).getName().getBaseName(), sets[findMost(knn.searchKNN(tinyImage(testing.get(i)), K))]);
 		}
+		
+		// write output to file -- > clean up this bit later
+		try 
+		{
+			writeResults(output);
+		} 
+		catch (IOException e) 
+		{
+			System.err.println("Unable to write to file, exact error: " + e);
+		}
 	}
 
 	public int findMost(List<IntFloatPair> distances) {
@@ -92,10 +107,24 @@ public class KNN
 	private float[] tinyImage(FImage image)
 	{
 		int length = Math.min(image.height, image.width);
-		
 		FImage extraction = image.extractCenter(length, length);
-		
 		return ResizeProcessor.resample(extraction, tinyImageSize, tinyImageSize).getFloatPixelVector();		
+	}
+	
+	// write results to run1.txt with the image name and it's prediction 
+	public void writeResults(Map<String, String> results) throws IOException 
+	{
+		File fout = new File("run1.txt");
+ 
+		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fout)));
+	 
+		for (Entry<String, String> entry : results.entrySet()) 
+		{
+			bw.write(entry.getKey() + " " + entry.getValue());
+			bw.newLine();
+		}
+	 
+		bw.close();
 	}
 
 }
