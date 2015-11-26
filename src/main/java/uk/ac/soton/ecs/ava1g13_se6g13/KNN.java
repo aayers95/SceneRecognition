@@ -1,14 +1,6 @@
 package uk.ac.soton.ecs.ava1g13_se6g13;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,36 +8,24 @@ import java.util.Map.Entry;
 
 import org.openimaj.data.dataset.VFSGroupDataset;
 import org.openimaj.data.dataset.VFSListDataset;
-import org.openimaj.image.DisplayUtilities;
 import org.openimaj.image.FImage;
 import org.openimaj.image.processing.resize.ResizeProcessor;
-import org.openimaj.knn.FloatNearestNeighbours;
 import org.openimaj.knn.FloatNearestNeighboursExact;
 import org.openimaj.util.pair.IntFloatPair;
 
 public class KNN 
 {
-	private VFSGroupDataset<FImage> training;
-	private VFSListDataset<FImage> testing;
-	private int tinyImageSize = 16;
-	private int K = 3;
-	private FloatNearestNeighbours knn;
-	private String[] sets;
+	private static int tinyImageSize = 16;
+	private static int K = 3;
 	
-	public KNN(VFSGroupDataset<FImage> training, VFSListDataset<FImage> testing)
-	{
-		this.training = training;
-		this.testing = testing; 
-		train();
-		test();
-	}
-
-	public void train()
-	{
+	public static void performKNN(VFSGroupDataset<FImage> training, VFSListDataset<FImage> testing){
+		
+		/*** Train the KNN classifier ***/
 		float[][] tinyFeatures = new float[training.numInstances()][];
-		sets = new String[training.numInstances()];
+		String[] sets = new String[training.numInstances()];
 		int index = 0;
 		
+		// Gets the tiny image feature for every image within every classification
 		for (Entry<String, VFSListDataset<FImage>> entry : training.entrySet()) 
 		{
 			for(FImage trainImage : entry.getValue()) 
@@ -56,32 +36,35 @@ public class KNN
 			}
 		}
 		
-		knn = new FloatNearestNeighboursExact(tinyFeatures);
-
-	}
-
-	public void test()
-	{
+		//Trains the KNN classifier with the tiny features
+		FloatNearestNeighboursExact knn = new FloatNearestNeighboursExact(tinyFeatures);
+	
+		/*** Test ***/
 		Map<String, String> output = new HashMap<String, String>();
+		
+		//Gets the classification for every image in the test set
 		for(int i = 0; i < testing.size(); i++){
 			output.put(testing.getFileObject(i).getName().getBaseName(), sets[findMost(knn.searchKNN(tinyImage(testing.get(i)), K))]);
 		}
-		
-		// write output to file -- > clean up this bit later
-		try 
-		{
-			writeResults(output);
-		} 
-		catch (IOException e) 
-		{
+	
+		/*** Write to file ***/
+		try{
+			Main.writeResults(output, 1);
+		}catch (IOException e){
 			System.err.println("Unable to write to file, exact error: " + e);
 		}
+		
 	}
-
-	public int findMost(List<IntFloatPair> distances) {
-
-	    if (distances == null || distances.size() == 0)
-	        return -1; //If code is working this will never happen
+	
+	// Returns the tiny image feature vector
+	private static float[] tinyImage(FImage image){
+		int length = Math.min(image.height, image.width);
+		FImage extraction = image.extractCenter(length, length);
+		return ResizeProcessor.resample(extraction, tinyImageSize, tinyImageSize).getFloatPixelVector();		
+	}
+	
+	// Returns the index of the most number of occurrences in the list of distances
+	private static int findMost(List<IntFloatPair> distances) {
 
 	    int previous = distances.get(0).first;
 	    int popular = distances.get(0).first;
@@ -102,29 +85,6 @@ public class KNN
 	    }
 
 	    return count > maxCount ? distances.get(distances.size()-1).first : popular;
-	}
-	
-	private float[] tinyImage(FImage image)
-	{
-		int length = Math.min(image.height, image.width);
-		FImage extraction = image.extractCenter(length, length);
-		return ResizeProcessor.resample(extraction, tinyImageSize, tinyImageSize).getFloatPixelVector();		
-	}
-	
-	// write results to run1.txt with the image name and it's prediction 
-	public void writeResults(Map<String, String> results) throws IOException 
-	{
-		File fout = new File("run1.txt");
- 
-		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fout)));
-	 
-		for (Entry<String, String> entry : results.entrySet()) 
-		{
-			bw.write(entry.getKey() + " " + entry.getValue());
-			bw.newLine();
-		}
-	 
-		bw.close();
 	}
 
 }
