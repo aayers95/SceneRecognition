@@ -18,9 +18,19 @@ public class Main {
     public static void main( String[] args ) 
     {
     	try {
-			VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
-			VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
+    		/*** Savas filepath ***/
+			//VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
+			//VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
 			
+    		/*** Aaron filepath ***/
+			VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
+			VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
+    		
+			//VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:http://comp3204.ecs.soton.ac.uk/cw/training.zip", ImageUtilities.FIMAGE_READER);
+			//VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:http://comp3204.ecs.soton.ac.uk/cw/testing.zip", ImageUtilities.FIMAGE_READER);
+			
+			System.out.println(training.size());
+			System.out.println(testing.size());
 			KNN.performKNN(training, testing);
 			
 		} catch (FileSystemException e) {
