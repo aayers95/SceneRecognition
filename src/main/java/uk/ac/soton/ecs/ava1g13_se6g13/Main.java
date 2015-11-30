@@ -31,7 +31,8 @@ public class Main {
 			
 			System.out.println(training.size());
 			System.out.println(testing.size());
-			KNN.performKNN(training, testing);
+			//KNN.performKNN(training, testing);
+			KMeans.performKMeans(training, testing);
 			
 		} catch (FileSystemException e) {
 			e.printStackTrace();
