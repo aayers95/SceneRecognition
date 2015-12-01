@@ -17,46 +17,43 @@ import org.openimaj.feature.SparseIntFV;
 import org.openimaj.feature.local.data.LocalFeatureListDataSource;
 import org.openimaj.feature.local.list.LocalFeatureList;
 import org.openimaj.image.FImage;
+import org.openimaj.image.annotation.evaluation.datasets.Caltech101.Record;
 import org.openimaj.image.feature.dense.gradient.dsift.ByteDSIFTKeypoint;
 import org.openimaj.image.feature.dense.gradient.dsift.DenseSIFT;
+import org.openimaj.image.feature.dense.gradient.dsift.PyramidDenseSIFT;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
 import org.openimaj.ml.annotation.ScoredAnnotation;
-import org.openimaj.ml.annotation.linear.LiblinearAnnotator;
-import org.openimaj.ml.annotation.linear.LiblinearAnnotator.Mode;
+import org.openimaj.ml.annotation.svm.SVMAnnotator;
 import org.openimaj.ml.clustering.ByteCentroidsResult;
 import org.openimaj.ml.clustering.assignment.HardAssigner;
 import org.openimaj.ml.clustering.kmeans.ByteKMeans;
+import org.openimaj.ml.kernel.HomogeneousKernelMap;
+import org.openimaj.ml.kernel.HomogeneousKernelMap.KernelType;
+import org.openimaj.ml.kernel.HomogeneousKernelMap.WindowType;
 import org.openimaj.util.pair.IntFloatPair;
 
-import de.bwaldvogel.liblinear.SolverType;
+public class SVM {
 
-public class KMeans {
-
-	public static void performKMeans(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing) {
-
-		/*** Train the KMeans classifier ***/
+	public static void performSVM(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing){
 		
-		//Create a DenseSIFT feature extractor with step size of 4 and 8 bins
+		/*** Training ***/
 		DenseSIFT dsift = new DenseSIFT(4, 8);
+		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6, 8, 10);
 		
-		//Get the HardAssigner
-		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(training, dsift);
+		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(training, pdsift);
+		HomogeneousKernelMap kernelMap = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
+		FeatureExtractor<DoubleFV, FImage> extractor = kernelMap.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
 		
-		//Create a Feature extractor using DenseSIFT and the HardAssigner
-		FeatureExtractor<DoubleFV, FImage> extractor = new BOVWExtractor(dsift, assigner);
-		
-		//Develope a set of linear classifiers and train the classifiers on the training data
-		LiblinearAnnotator<FImage, String> ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
-		ann.train(training);
-		
-		
-		/*** Test ***/
+		SVMAnnotator<FImage, String> svm = new SVMAnnotator<FImage, String>(extractor);
+		svm.train(training);
+
+		/*** Testing ***/
 		Map<String, String> output = new TreeMap<String, String>();
-		
+
 		//Gets the classification confidence for each class for every image in the test set
 		for(int i = 0; i < testing.size(); i++){
-			List<ScoredAnnotation<String>> scores = ann.annotate(testing.get(i));
+			List<ScoredAnnotation<String>> scores = svm.annotate(testing.get(i));
 			int indexGreatestConf = 0;
 			//Gets the annotation which has been given the greatest confidence
 			for(int j = 1; j < scores.size(); j++){
@@ -69,19 +66,14 @@ public class KMeans {
 
 		/*** Write to file ***/
 		try{
-			Main.writeResults(output, 2);
+			Main.writeResults(output, 3);
 		}catch (IOException e){
 			System.err.println("Unable to write to file, exact error: " + e);
 		}
-		
-	}
 
+	}
 	
-	/*Given a training set and a DenseSIFT feature extractor  
-	 * For every image in the training set, analyses the image using the DenseSIFT feature extractor
-	 * Then clusters the visual words and returns the HardAssigner 
-	 */
-	private static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(GroupedDataset<String, ListDataset<FImage>, FImage> training, DenseSIFT dsift) {
+	private static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(GroupedDataset<String, ListDataset<FImage>, FImage> training, PyramidDenseSIFT<FImage> dsift) {
 		List<LocalFeatureList<ByteDSIFTKeypoint>> allkeys = new ArrayList<LocalFeatureList<ByteDSIFTKeypoint>>();
 		
 		for (Entry<String, ListDataset<FImage>> entry : training.entrySet()) 
@@ -105,26 +97,26 @@ public class KMeans {
 	}
 	
 	//Our feature extractor
-	private static class BOVWExtractor implements FeatureExtractor<DoubleFV, FImage> {
+	static class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
+	    PyramidDenseSIFT<FImage> pdsift;
+	    HardAssigner<byte[], float[], IntFloatPair> assigner;
 
-		DenseSIFT dsift;
-		HardAssigner<byte[], float[], IntFloatPair> assigner;
-		
-		public BOVWExtractor(DenseSIFT dsift, HardAssigner<byte[], float[], IntFloatPair> assigner)
+	    public PHOWExtractor(PyramidDenseSIFT<FImage> pdsift, HardAssigner<byte[], float[], IntFloatPair> assigner)
 	    {
-	        this.dsift = dsift;
+	        this.pdsift = pdsift;
 	        this.assigner = assigner;
 	    }
-		
-		public DoubleFV extractFeature(FImage image) {
-	        dsift.analyseImage(image);
-	        
+
+	    public DoubleFV extractFeature(FImage image) {
+	        pdsift.analyseImage(image);
+
 	        BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
 
-	        BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(bovw, 8, 8);
+	        BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
+	                bovw, 2, 2);
 
-	        return spatial.aggregate(dsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
-		}
-		
+	        return spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
+	    }
 	}
+	
 }

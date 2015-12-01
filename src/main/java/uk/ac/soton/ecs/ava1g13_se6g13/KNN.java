@@ -10,6 +10,7 @@ import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
 import org.openimaj.data.dataset.VFSListDataset;
 import org.openimaj.image.FImage;
+import org.openimaj.image.processing.convolution.FGaussianConvolve;
 import org.openimaj.image.processing.resize.ResizeProcessor;
 import org.openimaj.knn.FloatNearestNeighboursExact;
 import org.openimaj.util.pair.IntFloatPair;
@@ -24,7 +25,6 @@ public class KNN
 		float[][] tinyFeatures = new float[training.numInstances()][];
 		String[] sets = new String[training.numInstances()];
 		int index = 0;
-		
 		// Gets the tiny image feature for every image within every classification
 		for (Entry<String, ListDataset<FImage>> entry : training.entrySet()) 
 		{

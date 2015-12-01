@@ -22,12 +22,12 @@ public class Main {
     {
     	try {
     		/*** Savas filepath ***/
-			VFSGroupDataset<FImage> tr = new VFSGroupDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
-			VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
+			//VFSGroupDataset<FImage> tr = new VFSGroupDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
+			//VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
 			
     		/*** Aaron filepath ***/
-			//VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
-			//VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
+			VFSGroupDataset<FImage> tr = new VFSGroupDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
+			VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
     		
 			//VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:http://comp3204.ecs.soton.ac.uk/cw/training.zip", ImageUtilities.FIMAGE_READER);
 			//VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:http://comp3204.ecs.soton.ac.uk/cw/testing.zip", ImageUtilities.FIMAGE_READER);
@@ -38,8 +38,9 @@ public class Main {
 			
 			System.out.println(training.size());
 			System.out.println(testing.size());
-			//KNN.performKNN(training, testing);
+			KNN.performKNN(training, testing);
 			KMeans.performKMeans(training, testing);
+			SVM.performSVM(training, testing);
 			
 		} catch (FileSystemException e) {
 			e.printStackTrace();
@@ -49,13 +50,13 @@ public class Main {
 	// write results to file with the image name and it's prediction 
 	public static void writeResults(Map<String, String> results, int runNo) throws IOException 
 	{
-		File fout = new File("run"+runNo+".txt");
+		File fout = new File("run"+runNo+".csv");
  
 		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fout)));
 	 
 		for (Entry<String, String> entry : results.entrySet()) 
 		{
-			bw.write(entry.getKey() + " " + entry.getValue());
+			bw.write(entry.getKey() + "," + entry.getValue());
 			bw.newLine();
 		}
 	 
