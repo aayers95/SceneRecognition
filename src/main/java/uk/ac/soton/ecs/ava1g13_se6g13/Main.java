@@ -9,8 +9,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.vfs2.FileSystemException;
+import org.openimaj.data.dataset.GroupedDataset;
+import org.openimaj.data.dataset.ListDataset;
 import org.openimaj.data.dataset.VFSGroupDataset;
 import org.openimaj.data.dataset.VFSListDataset;
+import org.openimaj.experiment.dataset.sampling.GroupSampler;
 import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
 
@@ -19,15 +22,19 @@ public class Main {
     {
     	try {
     		/*** Savas filepath ***/
-			//VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
-			//VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
+			VFSGroupDataset<FImage> tr = new VFSGroupDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
+			VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:/home/sav/Documents/Soton/COMP3204/CW3/SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
 			
     		/*** Aaron filepath ***/
-			VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
-			VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
+			//VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/training.zip", ImageUtilities.FIMAGE_READER);
+			//VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:C:/Users/Aaron/Documents/OpenImajCoursework2/OpenIMAJ-SceneRecognition/src/main/resources/testing.zip", ImageUtilities.FIMAGE_READER);
     		
 			//VFSGroupDataset<FImage> training = new VFSGroupDataset<FImage>("zip:http://comp3204.ecs.soton.ac.uk/cw/training.zip", ImageUtilities.FIMAGE_READER);
 			//VFSListDataset<FImage> testing = new VFSListDataset<FImage>("zip:http://comp3204.ecs.soton.ac.uk/cw/testing.zip", ImageUtilities.FIMAGE_READER);
+			
+			//Creates a GroupedDataset out of the VFSGroupDataset
+			//Had some problems with typing using a VFSGroupDataset
+			GroupedDataset<String, ListDataset<FImage>, FImage> training = GroupSampler.sample(tr, tr.size(), false);
 			
 			System.out.println(training.size());
 			System.out.println(testing.size());

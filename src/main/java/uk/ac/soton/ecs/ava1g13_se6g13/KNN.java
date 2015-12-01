@@ -1,12 +1,13 @@
 package uk.ac.soton.ecs.ava1g13_se6g13;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
-import org.openimaj.data.dataset.VFSGroupDataset;
+import org.openimaj.data.dataset.GroupedDataset;
+import org.openimaj.data.dataset.ListDataset;
 import org.openimaj.data.dataset.VFSListDataset;
 import org.openimaj.image.FImage;
 import org.openimaj.image.processing.resize.ResizeProcessor;
@@ -16,9 +17,8 @@ import org.openimaj.util.pair.IntFloatPair;
 public class KNN 
 {
 	private static int tinyImageSize = 16;
-	private static int K = 3;
 	
-	public static void performKNN(VFSGroupDataset<FImage> training, VFSListDataset<FImage> testing){
+	public static void performKNN(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing){
 		
 		/*** Train the KNN classifier ***/
 		float[][] tinyFeatures = new float[training.numInstances()][];
@@ -26,7 +26,7 @@ public class KNN
 		int index = 0;
 		
 		// Gets the tiny image feature for every image within every classification
-		for (Entry<String, VFSListDataset<FImage>> entry : training.entrySet()) 
+		for (Entry<String, ListDataset<FImage>> entry : training.entrySet()) 
 		{
 			for(FImage trainImage : entry.getValue()) 
 			{
@@ -40,11 +40,12 @@ public class KNN
 		FloatNearestNeighboursExact knn = new FloatNearestNeighboursExact(tinyFeatures);
 	
 		/*** Test ***/
-		Map<String, String> output = new HashMap<String, String>();
+		Map<String, String> output = new TreeMap<String, String>();
 		
 		//Gets the classification for every image in the test set
+		//K is set to the sqrt of the number of instances in the training set
 		for(int i = 0; i < testing.size(); i++){
-			output.put(testing.getFileObject(i).getName().getBaseName(), sets[findMost(knn.searchKNN(tinyImage(testing.get(i)), K))]);
+			output.put(testing.getFileObject(i).getName().getBaseName(), sets[findMost(knn.searchKNN(tinyImage(testing.get(i)), (int) Math.floor(Math.sqrt(training.numInstances()))))]);
 		}
 	
 		/*** Write to file ***/
