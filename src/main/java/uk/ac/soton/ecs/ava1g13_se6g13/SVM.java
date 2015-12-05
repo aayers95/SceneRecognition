@@ -17,14 +17,13 @@ import org.openimaj.feature.SparseIntFV;
 import org.openimaj.feature.local.data.LocalFeatureListDataSource;
 import org.openimaj.feature.local.list.LocalFeatureList;
 import org.openimaj.image.FImage;
-import org.openimaj.image.annotation.evaluation.datasets.Caltech101.Record;
 import org.openimaj.image.feature.dense.gradient.dsift.ByteDSIFTKeypoint;
 import org.openimaj.image.feature.dense.gradient.dsift.DenseSIFT;
 import org.openimaj.image.feature.dense.gradient.dsift.PyramidDenseSIFT;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
 import org.openimaj.ml.annotation.ScoredAnnotation;
-import org.openimaj.ml.annotation.svm.SVMAnnotator;
+import org.openimaj.ml.annotation.linear.LinearSVMAnnotator;
 import org.openimaj.ml.clustering.ByteCentroidsResult;
 import org.openimaj.ml.clustering.assignment.HardAssigner;
 import org.openimaj.ml.clustering.kmeans.ByteKMeans;
@@ -38,14 +37,14 @@ public class SVM {
 	public static void performSVM(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing){
 		
 		/*** Training ***/
-		DenseSIFT dsift = new DenseSIFT(4, 8);
-		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6, 8, 10);
+		DenseSIFT dsift = new DenseSIFT(4, 8); // 4,8
+		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6); // 4 6 8 10 -- Whatever finishes in less than a day
 		
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(training, pdsift);
 		HomogeneousKernelMap kernelMap = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
 		FeatureExtractor<DoubleFV, FImage> extractor = kernelMap.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
 		
-		SVMAnnotator<FImage, String> svm = new SVMAnnotator<FImage, String>(extractor);
+		LinearSVMAnnotator<FImage, String> svm = new  LinearSVMAnnotator<FImage, String>(extractor);
 		svm.train(training);
 
 		/*** Testing ***/
@@ -61,7 +60,12 @@ public class SVM {
 					indexGreatestConf = j;
 				}
 			}
-			output.put(testing.getFileObject(i).getName().getBaseName(), scores.get(indexGreatestConf).annotation);
+			if(scores.size() != 0){
+				output.put(testing.getFileObject(i).getName().getBaseName(), scores.get(indexGreatestConf).annotation);
+			}else{
+				output.put(testing.getFileObject(i).getName().getBaseName(), "NoClass");
+			}
+			
 		}
 
 		/*** Write to file ***/
@@ -73,15 +77,15 @@ public class SVM {
 
 	}
 	
-	private static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(GroupedDataset<String, ListDataset<FImage>, FImage> training, PyramidDenseSIFT<FImage> dsift) {
+	private static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(GroupedDataset<String, ListDataset<FImage>, FImage> training, PyramidDenseSIFT<FImage> pdsift) {
 		List<LocalFeatureList<ByteDSIFTKeypoint>> allkeys = new ArrayList<LocalFeatureList<ByteDSIFTKeypoint>>();
 		
 		for (Entry<String, ListDataset<FImage>> entry : training.entrySet()) 
 		{
 			for(FImage trainImage : entry.getValue()) 
 			{
-				dsift.analyseImage(trainImage.normalise());
-				allkeys.add(dsift.getByteKeypoints(0.005f));
+				pdsift.analyseImage(trainImage.normalise());
+				allkeys.add(pdsift.getByteKeypoints(0.005f));
 			}
 		}
 	
@@ -89,14 +93,13 @@ public class SVM {
 		if (allkeys.size() > 10000)
 			allkeys = allkeys.subList(0, 10000);
 
-		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(500);
+		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(500); //500
 		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
 		ByteCentroidsResult result = km.cluster(datasource);
 
 		return result.defaultHardAssigner();
 	}
 	
-	//Our feature extractor
 	static class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
 	    PyramidDenseSIFT<FImage> pdsift;
 	    HardAssigner<byte[], float[], IntFloatPair> assigner;
