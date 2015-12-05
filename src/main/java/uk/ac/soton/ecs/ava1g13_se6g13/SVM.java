@@ -35,6 +35,7 @@ import org.openimaj.util.pair.IntFloatPair;
 public class SVM {
 
 	public static void performSVM(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing){
+		//bla
 		
 		/*** Training ***/
 		DenseSIFT dsift = new DenseSIFT(4, 8); // 4,8
@@ -75,6 +76,17 @@ public class SVM {
 			System.err.println("Unable to write to file, exact error: " + e);
 		}
 
+	}
+	
+	public static void cacheFeatures(VFSGroupedDataset<FImage> training){
+		DenseSIFT dsift = new DenseSIFT(4, 8); // 4,8
+		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6); // 4 6 8 10 -- Whatever finishes in less than a day
+		
+		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(training, pdsift);
+		HomogeneousKernelMap kernelMap = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
+		FeatureExtractor<DoubleFV, FImage> extractor = kernelMap.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
+		
+		LinearSVMAnnotator<FImage, String> svm = new  LinearSVMAnnotator<FImage, String>(extractor);
 	}
 	
 	private static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(GroupedDataset<String, ListDataset<FImage>, FImage> training, PyramidDenseSIFT<FImage> pdsift) {
