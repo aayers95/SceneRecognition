@@ -21,7 +21,7 @@ import org.openimaj.image.feature.dense.gradient.dsift.ByteDSIFTKeypoint;
 import org.openimaj.image.feature.dense.gradient.dsift.DenseSIFT;
 import org.openimaj.image.feature.dense.gradient.dsift.PyramidDenseSIFT;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
-import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
+import org.openimaj.image.feature.local.aggregate.PyramidSpatialAggregator;
 import org.openimaj.ml.annotation.ScoredAnnotation;
 import org.openimaj.ml.annotation.linear.LinearSVMAnnotator;
 import org.openimaj.ml.clustering.ByteCentroidsResult;
@@ -35,11 +35,10 @@ import org.openimaj.util.pair.IntFloatPair;
 public class SVM {
 
 	public static void performSVM(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing){
-		//bla
-		
+
 		/*** Training ***/
 		DenseSIFT dsift = new DenseSIFT(4, 8); // 4,8
-		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6); // 4 6 8 10 -- Whatever finishes in less than a day
+		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6, 8); // 4 6 8 10 -- Whatever finishes in less than a day
 		
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(training, pdsift);
 		HomogeneousKernelMap kernelMap = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
@@ -76,17 +75,6 @@ public class SVM {
 			System.err.println("Unable to write to file, exact error: " + e);
 		}
 
-	}
-	
-	public static void cacheFeatures(VFSGroupedDataset<FImage> training){
-		DenseSIFT dsift = new DenseSIFT(4, 8); // 4,8
-		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6); // 4 6 8 10 -- Whatever finishes in less than a day
-		
-		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(training, pdsift);
-		HomogeneousKernelMap kernelMap = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
-		FeatureExtractor<DoubleFV, FImage> extractor = kernelMap.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
-		
-		LinearSVMAnnotator<FImage, String> svm = new  LinearSVMAnnotator<FImage, String>(extractor);
 	}
 	
 	private static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(GroupedDataset<String, ListDataset<FImage>, FImage> training, PyramidDenseSIFT<FImage> pdsift) {
@@ -127,8 +115,7 @@ public class SVM {
 
 	        BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
 
-	        BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
-	                bovw, 2, 2);
+	        PyramidSpatialAggregator<byte[], SparseIntFV> spatial = new PyramidSpatialAggregator<byte[], SparseIntFV>(bovw, 2, 4);
 
 	        return spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
 	    }
