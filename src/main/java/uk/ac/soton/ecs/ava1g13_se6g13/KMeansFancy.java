@@ -23,7 +23,8 @@ import org.openimaj.image.feature.dense.gradient.dsift.PyramidDenseSIFT;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.PyramidSpatialAggregator;
 import org.openimaj.ml.annotation.ScoredAnnotation;
-import org.openimaj.ml.annotation.linear.LinearSVMAnnotator;
+import org.openimaj.ml.annotation.linear.LiblinearAnnotator;
+import org.openimaj.ml.annotation.linear.LiblinearAnnotator.Mode;
 import org.openimaj.ml.clustering.ByteCentroidsResult;
 import org.openimaj.ml.clustering.assignment.HardAssigner;
 import org.openimaj.ml.clustering.kmeans.ByteKMeans;
@@ -32,27 +33,29 @@ import org.openimaj.ml.kernel.HomogeneousKernelMap.KernelType;
 import org.openimaj.ml.kernel.HomogeneousKernelMap.WindowType;
 import org.openimaj.util.pair.IntFloatPair;
 
-public class SVM {
+import de.bwaldvogel.liblinear.SolverType;
 
-	public static void performSVM(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing){
+public class KMeansFancy {
+
+	public static void performKMeansFancy(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing){
 
 		/*** Training ***/
 		DenseSIFT dsift = new DenseSIFT(4, 8); // 4,8
-		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6, 8); // 4 6 8 10 -- Whatever finishes in less than a day
+		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6); // 4 6 8 10 -- Whatever finishes in less than a day
 		
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(training, pdsift);
 		HomogeneousKernelMap kernelMap = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
 		FeatureExtractor<DoubleFV, FImage> extractor = kernelMap.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
 		
-		LinearSVMAnnotator<FImage, String> svm = new  LinearSVMAnnotator<FImage, String>(extractor);
-		svm.train(training);
+		LiblinearAnnotator<FImage, String> ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
+		ann.train(training);
 
 		/*** Testing ***/
 		Map<String, String> output = new TreeMap<String, String>();
 
 		//Gets the classification confidence for each class for every image in the test set
 		for(int i = 0; i < testing.size(); i++){
-			List<ScoredAnnotation<String>> scores = svm.annotate(testing.get(i));
+			List<ScoredAnnotation<String>> scores = ann.annotate(testing.get(i));
 			int indexGreatestConf = 0;
 			//Gets the annotation which has been given the greatest confidence
 			for(int j = 1; j < scores.size(); j++){
