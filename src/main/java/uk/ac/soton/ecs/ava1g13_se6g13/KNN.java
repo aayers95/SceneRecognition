@@ -61,6 +61,9 @@ public class KNN
 	private static float[] tinyImage(FImage image){
 		int length = Math.min(image.height, image.width);
 		FImage extraction = image.extractCenter(length, length);
+		//Zero mean the extraction
+		new FGaussianConvolve(FGaussianConvolve.DEFAULT_GAUSS_TRUNCATE).processImage(extraction);
+		//Normalise and return the tiny features
 		return ResizeProcessor.resample(extraction, tinyImageSize, tinyImageSize).getFloatPixelVector();		
 	}
 	
