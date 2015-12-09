@@ -40,8 +40,8 @@ public class KMeansFancy {
 	public static void performKMeansFancy(GroupedDataset<String, ListDataset<FImage>, FImage> training, VFSListDataset<FImage> testing){
 
 		/*** Training ***/
-		DenseSIFT dsift = new DenseSIFT(4, 8); // 4,8
-		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4, 6); // 4 6 8 10 -- Whatever finishes in less than a day
+		DenseSIFT dsift = new DenseSIFT(4, 8);
+		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(dsift, 6f, 4); 
 		
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(training, pdsift);
 		HomogeneousKernelMap kernelMap = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
@@ -103,7 +103,7 @@ public class KMeansFancy {
 		return result.defaultHardAssigner();
 	}
 	
-	static class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
+	private static class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
 	    PyramidDenseSIFT<FImage> pdsift;
 	    HardAssigner<byte[], float[], IntFloatPair> assigner;
 
