@@ -1,10 +1,10 @@
 package uk.ac.soton.ecs.ava1g13_se6g13;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
@@ -40,7 +40,7 @@ public class KNN
 		FloatNearestNeighboursExact knn = new FloatNearestNeighboursExact(tinyFeatures);
 	
 		/*** Test ***/
-		Map<String, String> output = new TreeMap<String, String>();
+		Map<String, String> output = new HashMap<String, String>();
 		
 		//Gets the classification for every image in the test set
 		//K is set to the sqrt of the number of instances in the training set
